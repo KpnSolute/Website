@@ -2,7 +2,7 @@ services:
   - type: web
     name: kpnsolute-api
     runtime: node
-    buildCommand: npm ci --ignore-scripts && npm run build --workspace apps/api
+    buildCommand: npm ci --include=dev --ignore-scripts && npx esbuild apps/api/src/index.ts --bundle --platform=node --format=esm --target=node20 --packages=external --alias:@kpn/contracts=./packages/contracts/src/index.ts --alias:@kpn/config=./packages/config/src/index.ts --outfile=apps/api/dist/index.js
     startCommand: npm run start --workspace apps/api
     healthCheckPath: /health
     envVars:

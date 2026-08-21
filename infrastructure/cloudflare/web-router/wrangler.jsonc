@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "kpnsolute-web-router",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-20",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "kpnsolute.com", "custom_domain": true },
+    { "pattern": "www.kpnsolute.com", "custom_domain": true },
+    { "pattern": "accounts.kpnsolute.com", "custom_domain": true },
+    { "pattern": "auth.kpnsolute.com", "custom_domain": true },
+    { "pattern": "platform.kpnsolute.com", "custom_domain": true },
+    { "pattern": "create.kpnsolute.com", "custom_domain": true },
+    { "pattern": "billing.kpnsolute.com", "custom_domain": true },
+    { "pattern": "link.kpnsolute.com", "custom_domain": true },
+    { "pattern": "flow.kpnsolute.com", "custom_domain": true },
+  ],
+  "observability": { "enabled": true },
+}
