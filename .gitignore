@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.local
+*.local.env
+.DS_Store
+Thumbs.db
+*.log
+.turbo/
+.cache/
+.venv-ui/
+artifacts/

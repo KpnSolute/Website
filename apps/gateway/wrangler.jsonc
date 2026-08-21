@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "kpnsolute-api-gateway",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-08-17",
+  "workers_dev": false,
+  // Cloudflare custom domains cannot be wildcards, so every corporate tenant
+  // subdomain needs its own entry here. Adding a corporation in Platform is
+  // therefore a provisioning step that includes an edge route, not just a
+  // database row. See docs/ROUTE_REGISTRY.md section 3.0.
+  "routes": [
+    { "pattern": "api.kpnsolute.com", "custom_domain": true },
+    { "pattern": "compute.kpnsolute.com", "custom_domain": true },
+    { "pattern": "api.compute.kpnsolute.com", "custom_domain": true },
+    // Corporate tenant runtimes:
+    { "pattern": "mjcc.kpnsolute.com", "custom_domain": true },
+  ],
+  "vars": {
+    "COMPUTE_APP_ORIGIN": "https://kpncompute.onrender.com",
+    "COMPUTE_API_ORIGIN": "https://mjcc-managements.onrender.com",
+    "COMPUTE_COMPAT_API_ORIGIN": "https://mjcc-managements.onrender.com",
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 },
+  },
+}

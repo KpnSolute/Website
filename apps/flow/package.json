@@ -1,0 +1,25 @@
+{
+  "name": "@kpn/app-flow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5179",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kpn/app-runtime": "^0.1.0",
+    "@kpn/design-system": "^0.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^6.0.5",
+    "typescript": "^5.5.4",
+    "vite": "^8.2.1"
+  }
+}
