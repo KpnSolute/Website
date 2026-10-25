@@ -12,3 +12,5 @@ Thumbs.db
 .cache/
 .venv-ui/
 artifacts/
+
+.mcp.env

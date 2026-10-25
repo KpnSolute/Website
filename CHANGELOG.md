@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased - project-scoped Supabase MCP
+
+- Added `scripts/mcp/` and `.mcp.json` so this repository starts the Supabase MCP
+  server scoped to KpnIdentity only (`--project-ref`), through a wrapper that
+  loads secrets only from a gitignored, owner-only `.mcp.env`, never from the
+  global shell, and pins `@supabase/mcp-server-supabase@0.13.0`.
+- Made `SUPABASE_PROJECT_REF` mandatory in `supabase.sh` and `doctor.sh`: this
+  repository has no `supabase/config.toml`, so the previous fallback silently
+  left the ref unset; both now fail with a clear message instead.
+- No secret, migration, schema change, or deployment.
+
 ## Unreleased - gateway prefix contract, auth namespace, account destinations (local only)
 
 - Split the gateway's service-prefix handling into two explicit modes. The five
