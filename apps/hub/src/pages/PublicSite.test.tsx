@@ -1,0 +1,69 @@
+import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+import { PRODUCTS } from '../content/site';
+import { AboutPage } from './AboutPage';
+import { PartnersPage } from './PartnersPage';
+import { ProductsPage } from './ProductsPage';
+
+vi.mock('@kpn/app-runtime', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    useSession: () => ({ status: 'signed-out', user: null, signIn: vi.fn(), signOut: vi.fn() }),
+    SessionProvider: ({ children }: { children: unknown }) => children,
+  };
+});
+
+const at = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
+
+describe('public pages', () => {
+  it('About covers what it is, goals, vision and how we work', () => {
+    at(<AboutPage />);
+    expect(screen.getByRole('heading', { level: 1, name: 'About KpnSolute' })).toBeTruthy();
+    for (const name of ['What KpnSolute is', 'Our goals', 'Our vision', 'How we work']) {
+      expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
+    }
+    expect(screen.getAllByText('Keeping People Navigated.').length).toBeGreaterThan(0);
+  });
+
+  it('Products lists all four products and the honest stage note', () => {
+    at(<ProductsPage />);
+    for (const product of PRODUCTS) {
+      expect(screen.getByRole('heading', { level: 2, name: product.name })).toBeTruthy();
+    }
+    expect(screen.getByText(/different stages/i)).toBeTruthy();
+    expect(screen.getByText(/not financial advice/i)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Visit LunchVoice' }).getAttribute('href')).toBe(
+      'https://lunchvoice.com',
+    );
+  });
+
+  it('Partners shows ways to work together, no invented partner, and no made-up address', () => {
+    at(<PartnersPage />);
+    expect(screen.getByRole('heading', { level: 2, name: 'Ways to work together' })).toBeTruthy();
+    expect(screen.getByText(/once each relationship is in place/i)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /@/ })).toBeNull();
+  });
+
+  it('has one main landmark, a skip link and a labelled main navigation on every page', () => {
+    for (const page of [
+      <AboutPage key="a" />,
+      <ProductsPage key="p" />,
+      <PartnersPage key="r" />,
+    ]) {
+      const { unmount } = at(page);
+      expect(screen.getAllByRole('main')).toHaveLength(1);
+      expect(screen.getByRole('link', { name: 'Skip to content' }).getAttribute('href')).toBe(
+        '#main',
+      );
+      const nav = screen.getByRole('navigation', { name: 'Main' });
+      expect(
+        within(nav)
+          .getAllByRole('link')
+          .map((l) => l.textContent),
+      ).toEqual(['About', 'Products', 'Partners']);
+      unmount();
+    }
+  });
+});
