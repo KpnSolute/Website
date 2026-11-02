@@ -44,11 +44,19 @@ Google consent screen values: home page `https://kpnsolute.com/`, privacy `https
 
 ## Brand
 
-`brand/kpnsolute/` holds the source (`build.py`, Josefin Sans under the SIL OFL, licence included). The wordmark
-is the owner's supplied lettering (Josefin Sans), outlined so no font is needed. The mark is a **K made of two
-solid shapes**: a stem and a bold chevron split by an even gap. Navy stem and blue chevron on light, white stem and
-light-blue chevron on dark or on the app tile. Variants: flat lockup (site), app tile, uppercase wide-spaced
-alternative, dark, mono marks, and a bolder favicon that holds at 16 px.
+The **final brand icon** is the owner's artwork: a teal compass star at the centre of woven black orbits, with an
+"eye" in the middle. `brand/kpnsolute/source-icon.webp` is that artwork, and the SVGs are traced from it
+(`trace.py` -> `layers.json` -> `icon.py`, `assets.py`), not redrawn, so they match it exactly. It is two layers:
+**ink** (orbits, diamond frame, dot) and **teal** (the star). The gaps between strokes are real gaps, not white paint,
+so the icon works on any background and recolors for dark mode (`kpnsolute-icon-on-dark.svg`).
 
-Regenerate: `python3 -m venv /tmp/v && /tmp/v/bin/pip install fonttools && cd brand/kpnsolute && /tmp/v/bin/python build.py`,
-then copy the SVGs to `apps/hub/public/brand/` and refresh `apps/hub/src/components/Logo.tsx` (its wordmark path is generated).
+The wordmark is the owner's supplied lettering (Josefin Sans, SIL OFL, licence included), outlined so no font is needed.
+Files: icon (colour, on-dark, mono, white), animated icon (continuous slow spin, for loaders), lockups (light and
+dark), wordmark, favicon (the full icon on a white tile, which stays recognizable at 16 px), PNGs and `favicon.ico`.
+
+On the site the `Logo` component turns the icon slowly (24 s a turn) while the logo is hovered or focused, rests where it
+stopped, and does not move under `prefers-reduced-motion`.
+
+Regenerate: `python3 -m venv /tmp/v && /tmp/v/bin/pip install fonttools potracer pillow numpy` then, in `brand/kpnsolute`,
+`python trace.py && python icon.py && python assets.py`; copy the SVGs to `apps/hub/public/brand/` and refresh
+`apps/hub/src/components/Logo.tsx` (its paths are generated from `layers.json`).

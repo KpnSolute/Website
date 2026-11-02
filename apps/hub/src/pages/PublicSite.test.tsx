@@ -91,3 +91,22 @@ describe('public pages', () => {
     }
   });
 });
+
+describe('logo', () => {
+  it('shows the icon and wordmark as one decorative graphic, with a spin layer for hover', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <ProductsPage />
+      </MemoryRouter>,
+    );
+    const logos = container.querySelectorAll('svg.kpn-logo');
+    expect(logos.length).toBe(2); // header and footer
+    for (const logo of logos) {
+      expect(logo.getAttribute('aria-hidden')).toBe('true');
+      expect(logo.querySelector('.kpn-logo-spin')).not.toBeNull();
+      expect(logo.querySelectorAll('path').length).toBe(3); // ink, star, wordmark
+    }
+    // The home link still has an accessible name.
+    expect(screen.getAllByRole('link', { name: 'KpnSolute home' }).length).toBeGreaterThan(0);
+  });
+});
