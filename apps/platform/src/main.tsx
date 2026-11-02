@@ -5,8 +5,8 @@ import { ConnectedOrganizationsPage } from './ConnectedOrganizationsPage';
 
 const config = {
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000',
-  authAppOrigin: import.meta.env.VITE_KPNAUTH_URL ?? 'https://vwbrxcltetelvvkbnbru.supabase.co',
-  clientId: 'kpnsolute-platform',
+  authAppOrigin: import.meta.env.VITE_KPNAUTH_URL ?? 'https://axzwdbizblfkspduqilj.supabase.co',
+  clientId: import.meta.env.VITE_KPN_CLIENT_ID ?? 'kpnsolute-platform',
   redirectUri: `${window.location.origin}/auth/callback`,
 };
 

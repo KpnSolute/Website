@@ -1,7 +1,7 @@
 # KpnAuth architecture and activation
 
 KpnAuth is the shared KpnSolute identity authority. The Supabase project is
-`vwbrxcltetelvvkbnbru` (`https://vwbrxcltetelvvkbnbru.supabase.co`). This
+`axzwdbizblfkspduqilj` (`https://axzwdbizblfkspduqilj.supabase.co`). This
 identifier and the publishable browser key are public configuration; database
 passwords and service-role keys remain server-only.
 
@@ -64,3 +64,15 @@ These steps are configuration requirements, not evidence that SSO is live.
 Acceptance requires email/password, Google, consent, silent repeat sign-in,
 refresh, logout/revocation, denied consent, bad state, bad PKCE, wrong audience,
 expired token, cross-tenant denial, and rollback tests.
+
+## Moved to KpnIdentity (2026-11-02)
+
+The original KpnAuth project no longer resolves, so sign-in was down. Every app and the API now use the shared
+KpnIdentity project `axzwdbizblfkspduqilj` (`auth.kpnsolute.com`; rules in the agent notes `kpnidentity.md`).
+
+- **One OAuth client per app** (public client, PKCE, exact redirect `https://<app host>/auth/callback`). Supabase issues
+  each client a UUID, so every static site sets `VITE_KPN_CLIENT_ID` to its own client id. The old string names remain
+  only as local-development fallbacks.
+- The API verifies the access token against the KpnIdentity JWKS (`SUPABASE_URL`), audience `authenticated`.
+- `SUPABASE_PUBLISHABLE_KEY` and `VITE_SUPABASE_PUBLISHABLE_KEY` must be the KpnIdentity publishable key.
+- Accounts are keyed on the token subject. Users of the old project are not carried over (none had signed in).

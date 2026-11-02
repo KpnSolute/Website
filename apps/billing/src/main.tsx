@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { ManagedPortal } from '@kpn/app-runtime';
 const config = {
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000',
-  authAppOrigin: import.meta.env.VITE_KPNAUTH_URL ?? 'https://vwbrxcltetelvvkbnbru.supabase.co',
-  clientId: 'kpnsolute-billing',
+  authAppOrigin: import.meta.env.VITE_KPNAUTH_URL ?? 'https://axzwdbizblfkspduqilj.supabase.co',
+  clientId: import.meta.env.VITE_KPN_CLIENT_ID ?? 'kpnsolute-billing',
   redirectUri: `${window.location.origin}/auth/callback`,
 };
 const sections = [

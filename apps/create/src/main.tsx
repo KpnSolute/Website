@@ -5,8 +5,8 @@ import { ConnectedProvisionPage } from './ConnectedProvisionPage';
 
 const config = {
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000',
-  authAppOrigin: import.meta.env.VITE_KPNAUTH_URL ?? 'https://vwbrxcltetelvvkbnbru.supabase.co',
-  clientId: 'kpnsolute-create',
+  authAppOrigin: import.meta.env.VITE_KPNAUTH_URL ?? 'https://axzwdbizblfkspduqilj.supabase.co',
+  clientId: import.meta.env.VITE_KPN_CLIENT_ID ?? 'kpnsolute-create',
   redirectUri: `${window.location.origin}/auth/callback`,
 };
 
