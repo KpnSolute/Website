@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PRODUCTS } from '../content/site';
 import { AboutPage } from './AboutPage';
 import { PartnersPage } from './PartnersPage';
+import { PrivacyPage, TermsPage } from './LegalPage';
 import { ProductsPage } from './ProductsPage';
 
 vi.mock('@kpn/app-runtime', async (importOriginal) => {
@@ -16,6 +17,29 @@ vi.mock('@kpn/app-runtime', async (importOriginal) => {
 });
 
 const at = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
+
+describe('legal pages', () => {
+  it('Privacy Policy has a title, a contents list and every section reachable by anchor', () => {
+    at(<PrivacyPage />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Privacy Policy' })).toBeTruthy();
+    const toc = screen.getByRole('navigation', { name: 'On this page' });
+    const anchors = within(toc)
+      .getAllByRole('link')
+      .map((l) => l.getAttribute('href')!.slice(1));
+    expect(anchors.length).toBeGreaterThan(8);
+    for (const id of anchors) expect(document.getElementById(id)).not.toBeNull();
+    expect(screen.getByText(/Google API Services User Data Policy/)).toBeTruthy();
+  });
+
+  it('Terms of Service renders its sections and the footer links to both documents', () => {
+    at(<TermsPage />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Terms of Service' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Your account' })).toBeTruthy();
+    const footer = within(screen.getByRole('navigation', { name: 'Footer' }));
+    expect(footer.getByRole('link', { name: 'Privacy' }).getAttribute('href')).toBe('/privacy');
+    expect(footer.getByRole('link', { name: 'Terms' }).getAttribute('href')).toBe('/terms');
+  });
+});
 
 describe('public pages', () => {
   it('About covers what it is, goals, vision and how we work', () => {

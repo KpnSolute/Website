@@ -79,6 +79,8 @@ export function SiteFooter() {
           <Link to="/products">Products</Link>
           <Link to="/partners">Partners</Link>
           <a href={crossAppUrl('accounts', '/', IS_DEV)}>Accounts</a>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
         </nav>
       </div>
       <p className="pub-footer-legal">KpnSolute. All rights reserved.</p>

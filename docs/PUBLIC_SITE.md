@@ -24,6 +24,24 @@ privacy of customer materials) and `governance/LEGAL_STATUS_AND_IP.md`. Change t
   to show one on the Partners page. Unset, the page shows no address rather than an invented one.
 - Approval of the wording in `site.ts` before this is published.
 
+## Privacy Policy and Terms of Service
+
+`/privacy` and `/terms` (content in `apps/hub/src/content/legal.ts`, tests in `legal.test.ts`). Plain-language drafts
+written from what the system actually does: shared account on Supabase Auth (US), Render hosting, Cloudflare DNS,
+Google sign-in with the basic scopes only (`openid email profile`), no advertising or analytics trackers. They are
+**not legal advice** and need counsel's review before they are relied on. Points for counsel:
+
+- the liability cap (12 months of fees, or 100 US dollars) and the "no warranty" wording;
+- children: accounts are 13 and over; school products (LunchVoice) may need their own, stricter terms;
+- retention: security records may outlive account deletion; the 30-day reply promise;
+- governing law and dispute resolution are deliberately absent until the legal entity exists;
+- paid plans are described as not yet available; update both documents before billing goes live.
+  The contact address comes from `VITE_CONTACT_EMAIL` (set on the `kpnsolute-hub` Render site); the pages must not go
+  live without it.
+
+Google consent screen values: home page `https://kpnsolute.com/`, privacy `https://kpnsolute.com/privacy`, terms
+`https://kpnsolute.com/terms`, authorized domains `kpnsolute.com` and `supabase.co` (Supabase hosts the callback).
+
 ## Brand
 
 `brand/kpnsolute/` holds the source (`build.py`, Josefin Sans under the SIL OFL, licence included). The wordmark

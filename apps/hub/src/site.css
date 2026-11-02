@@ -357,3 +357,36 @@
   display: block;
   color: var(--kpn-color-text);
 }
+
+.pub-legal-date {
+  margin: 0 0 var(--kpn-space-4);
+  color: var(--kpn-color-text-faint);
+  font-size: var(--kpn-font-size-sm);
+}
+.pub-legal-toc {
+  margin: var(--kpn-space-5) 0 0;
+  padding: var(--kpn-space-4) var(--kpn-space-5);
+  background: var(--kpn-color-surface-muted);
+  border-radius: var(--kpn-radius-md);
+  max-width: 62ch;
+}
+.pub-legal-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--kpn-space-2);
+}
+.pub-legal-section {
+  margin-top: var(--kpn-space-6);
+}
+.pub-legal-section .pub-h2 {
+  font-size: 1.35rem;
+}
+.pub-prose ul {
+  margin: 0 0 var(--kpn-space-4);
+  padding-left: 1.25em;
+}
+.pub-prose li {
+  margin-bottom: var(--kpn-space-2);
+}
