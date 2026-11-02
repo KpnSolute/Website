@@ -46,11 +46,17 @@ def favicon_compass():
             + tile("", "#0A0A0A") + f'<g fill="{STAR_D}">{spikes}</g>'
             f'<path d="M64 38L90 64L64 90L38 64Z" fill="#0A0A0A" stroke="#F4F6FA" stroke-width="6" stroke-linejoin="round"/><circle cx="64" cy="64" r="7" fill="#F4F6FA"/></svg>\n')
 
+def favicon_adaptive():
+    """Bare icon on a transparent background; ink and star switch for dark browser tabs."""
+    svg = open("kpnsolute-icon.svg").read()
+    style = '<style>.kpn-ink{fill:%s}.kpn-star{fill:%s}@media (prefers-color-scheme:dark){.kpn-ink{fill:%s}.kpn-star{fill:%s}}</style>' % (INK, STAR, INK_D, STAR_D)
+    return re.sub(r"(<svg[^>]*>)", lambda m: m.group(1) + style, svg, count=1)
+
 if __name__ == "__main__":
     out = {
         "kpnsolute-lockup.svg": lockup(INK, STAR),
         "kpnsolute-lockup-on-dark.svg": lockup(INK_D, STAR_D),
-        "kpnsolute-favicon.svg": favicon_full(),
+        "kpnsolute-favicon.svg": favicon_adaptive(),
     }
     d, tw = word(96, 0, 72); out["kpnsolute-wordmark.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {tw + 4:.1f} 118" role="img" aria-labelledby="t"><title id="t">KpnSolute</title><path fill="{INK}" d="{d}"/></svg>\n'
     for n, c in out.items(): open(n, "w").write(c); print("wrote", n, len(c))
