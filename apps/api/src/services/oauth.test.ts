@@ -1,5 +1,6 @@
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createLocalJWKSet, jwtVerify } from 'jose';
 import type { EnvRecord } from '@kpn/config';
 import type { Id, WorkforceStaffSession } from '@kpn/contracts';
 import type {
@@ -11,14 +12,27 @@ import type {
   WorkforceAuthRepository,
 } from '../repositories/types';
 import { ApiError } from '../lib/errors';
+import type { AuthenticatedSession } from './auth';
+import { workforcePublicJwks } from './workforce-auth';
+
+// The KpnAuth (Supabase) session is verified in services/auth; here it is the
+// input under test, so it is planted per test rather than signed by a provider.
+const planted = vi.hoisted(() => ({ session: null as unknown }));
+vi.mock('./auth', () => ({ resolveAccessToken: async () => planted.session }));
 import { deriveCodeChallengeS256, expiryFromNow, hashOpaqueSecret } from './oauth-protocol';
 import {
+  completeConsumerAuthorization,
   completeWorkforceAuthorization,
   createAuthorizationRequest,
   exchangeAuthorizationCode,
   refreshWorkforceTokens,
   revokeRefreshToken,
+  type TokenResponse,
 } from './oauth';
+
+/** The existing suites exercise workforce codes; narrow the exchange result for them. */
+const exchangeWorkforce = (...args: Parameters<typeof exchangeAuthorizationCode>) =>
+  exchangeAuthorizationCode(...args) as Promise<TokenResponse>;
 
 const { privateKey, publicKey } = generateKeyPairSync('ec', {
   namedCurve: 'P-256',
@@ -109,6 +123,7 @@ class FakeOAuthRepository implements OAuthRepository {
 
   async createAuthorizationCode(input: Parameters<OAuthRepository['createAuthorizationCode']>[0]) {
     this.codes.set(input.codeHash, {
+      consumerClaims: input.consumerClaims ?? null,
       id: randomUUID(),
       requestId: input.requestId,
       clientId: input.clientId,
@@ -365,7 +380,7 @@ describe('exchangeAuthorizationCode', () => {
   it('exchanges a valid code for an access and refresh token', async () => {
     const { view, codeVerifier } = await startRequest();
     const code = await authorizeWithSession(view.requestId, session());
-    const result = await exchangeAuthorizationCode(env, repositories(), {
+    const result = await exchangeWorkforce(env, repositories(), {
       code,
       codeVerifier,
       clientId: registered.clientId,
@@ -386,17 +401,15 @@ describe('exchangeAuthorizationCode', () => {
       clientId: registered.clientId,
       redirectUri: REDIRECT_URI,
     };
-    await exchangeAuthorizationCode(env, repositories(), input);
-    await expect(exchangeAuthorizationCode(env, repositories(), input)).rejects.toBeInstanceOf(
-      ApiError,
-    );
+    await exchangeWorkforce(env, repositories(), input);
+    await expect(exchangeWorkforce(env, repositories(), input)).rejects.toBeInstanceOf(ApiError);
   });
 
   it('rejects a mismatched PKCE verifier', async () => {
     const { view } = await startRequest();
     const code = await authorizeWithSession(view.requestId, session());
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier: verifier(),
         clientId: registered.clientId,
@@ -409,7 +422,7 @@ describe('exchangeAuthorizationCode', () => {
     const { view, codeVerifier } = await startRequest();
     const code = await authorizeWithSession(view.requestId, session());
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier: verifier(),
         clientId: registered.clientId,
@@ -418,7 +431,7 @@ describe('exchangeAuthorizationCode', () => {
     ).rejects.toBeInstanceOf(ApiError);
     // The correct verifier must now also fail: the code is spent.
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier,
         clientId: registered.clientId,
@@ -431,7 +444,7 @@ describe('exchangeAuthorizationCode', () => {
     const { view, codeVerifier } = await startRequest();
     const code = await authorizeWithSession(view.requestId, session());
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier,
         clientId: registered.clientId,
@@ -446,7 +459,7 @@ describe('exchangeAuthorizationCode', () => {
     const { view, codeVerifier } = await startRequest();
     const code = await authorizeWithSession(view.requestId, session());
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier,
         clientId: other.clientId,
@@ -458,7 +471,7 @@ describe('exchangeAuthorizationCode', () => {
   it('rejects an unknown code', async () => {
     const { codeVerifier } = await startRequest();
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code: 'never-issued',
         codeVerifier,
         clientId: registered.clientId,
@@ -473,7 +486,7 @@ describe('exchangeAuthorizationCode', () => {
     const code = await authorizeWithSession(view.requestId, live);
     await workforce.revokeSession(live.id);
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier,
         clientId: registered.clientId,
@@ -488,7 +501,7 @@ describe('exchangeAuthorizationCode', () => {
     const code = await authorizeWithSession(view.requestId, live);
     live.tenantId = randomUUID();
     await expect(
-      exchangeAuthorizationCode(env, repositories(), {
+      exchangeWorkforce(env, repositories(), {
         code,
         codeVerifier,
         clientId: registered.clientId,
@@ -503,7 +516,7 @@ describe('refresh rotation', () => {
     const { view, codeVerifier } = await startRequest();
     const live = session();
     const code = await authorizeWithSession(view.requestId, live);
-    const tokens = await exchangeAuthorizationCode(env, repositories(), {
+    const tokens = await exchangeWorkforce(env, repositories(), {
       code,
       codeVerifier,
       clientId: registered.clientId,
@@ -570,5 +583,179 @@ describe('refresh rotation', () => {
     await revokeRefreshToken(repositories(), tokens.refreshToken);
     expect(workforce.revoked).toContain(live.id);
     await expect(revokeRefreshToken(repositories(), 'never-issued')).resolves.toBeUndefined();
+  });
+});
+
+describe('consumer sign-in (OIDC ID token for relying parties)', () => {
+  const USER_ID = randomUUID();
+  const CONSUMER_REDIRECT = 'https://lunchvoice.com/auth/callback';
+
+  function person(overrides: Record<string, unknown> = {}): AuthenticatedSession {
+    return {
+      sessionId: randomUUID(),
+      userId: USER_ID,
+      user: { id: USER_ID, primaryEmail: 'manager@example.com', displayName: 'Manager' },
+      claims: {
+        sub: USER_ID,
+        email: 'manager@example.com',
+        user_metadata: {
+          email_verified: true,
+          full_name: 'Pat Manager',
+          avatar_url: 'https://lh3.example.com/p.png',
+        },
+        ...overrides,
+      },
+    };
+  }
+
+  async function startConsumer(clientOverrides: Partial<OAuthClientRecord> = {}) {
+    const rp = client({
+      id: randomUUID(),
+      clientId: 'lunchvoice-v2',
+      serviceKey: null,
+      clientType: 'public',
+      allowedTokenUses: ['consumer'],
+      redirectUris: [CONSUMER_REDIRECT],
+      ...clientOverrides,
+    });
+    store.clients.set(rp.clientId, rp);
+    const codeVerifier = verifier();
+    const view = await createAuthorizationRequest(store, {
+      clientId: rp.clientId,
+      redirectUri: CONSUMER_REDIRECT,
+      responseType: 'code',
+      codeChallenge: deriveCodeChallengeS256(codeVerifier),
+      codeChallengeMethod: 'S256',
+      state: STATE,
+      nonce: NONCE,
+    });
+    return { rp, view, codeVerifier };
+  }
+
+  function codeFrom(redirectTo: string): string {
+    const url = new URL(redirectTo);
+    expect(url.origin + url.pathname).toBe(CONSUMER_REDIRECT);
+    expect(url.searchParams.get('state')).toBe(STATE);
+    return url.searchParams.get('code') ?? '';
+  }
+
+  async function verifyIdToken(idToken: string, audience: string) {
+    const jwks = createLocalJWKSet((await workforcePublicJwks(env)) as never);
+    return (
+      await jwtVerify(idToken, jwks, {
+        issuer: 'https://auth.test.kpnsolute.com',
+        audience,
+        algorithms: ['ES256'],
+      })
+    ).payload;
+  }
+
+  const repos = () => ({ ...repositories(), users: {} }) as never;
+
+  it('issues an ES256 ID token bound to the client, the nonce and the stable account id', async () => {
+    planted.session = person();
+    const { rp, view, codeVerifier } = await startConsumer();
+    const { redirectTo } = await completeConsumerAuthorization(env, repos(), {
+      requestId: view.requestId,
+      authorizationHeader: 'Bearer t',
+    });
+    const result = await exchangeAuthorizationCode(env, repos(), {
+      code: codeFrom(redirectTo),
+      codeVerifier,
+      clientId: rp.clientId,
+      redirectUri: CONSUMER_REDIRECT,
+    });
+    expect('idToken' in result).toBe(true);
+    const claims = await verifyIdToken((result as { idToken: string }).idToken, rp.clientId);
+    expect(claims.sub).toBe(USER_ID);
+    expect(claims.nonce).toBe(NONCE);
+    expect(claims.email).toBe('manager@example.com');
+    expect(claims.email_verified).toBe(true);
+    expect(claims.name).toBe('Pat Manager');
+    expect(claims.picture).toBe('https://lh3.example.com/p.png');
+    expect(Number(claims.exp) - Number(claims.iat)).toBeLessThanOrEqual(300);
+  });
+
+  it('marks email unverified unless the provider said so explicitly', async () => {
+    planted.session = person({ user_metadata: {} });
+    const { rp, view, codeVerifier } = await startConsumer();
+    const { redirectTo } = await completeConsumerAuthorization(env, repos(), {
+      requestId: view.requestId,
+      authorizationHeader: 'Bearer t',
+    });
+    const result = await exchangeAuthorizationCode(env, repos(), {
+      code: codeFrom(redirectTo),
+      codeVerifier,
+      clientId: rp.clientId,
+      redirectUri: CONSUMER_REDIRECT,
+    });
+    const claims = await verifyIdToken((result as { idToken: string }).idToken, rp.clientId);
+    expect(claims.email_verified).toBe(false);
+  });
+
+  it('refuses to approve without a verified KpnAuth session', async () => {
+    planted.session = null;
+    const { view } = await startConsumer();
+    await expect(
+      completeConsumerAuthorization(env, repos(), {
+        requestId: view.requestId,
+        authorizationHeader: undefined,
+      }),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('burns the code: a second exchange and a wrong PKCE verifier both fail', async () => {
+    planted.session = person();
+    const { rp, view, codeVerifier } = await startConsumer();
+    const { redirectTo } = await completeConsumerAuthorization(env, repos(), {
+      requestId: view.requestId,
+      authorizationHeader: 'Bearer t',
+    });
+    const code = codeFrom(redirectTo);
+    await expect(
+      exchangeAuthorizationCode(env, repos(), {
+        code,
+        codeVerifier: verifier(),
+        clientId: rp.clientId,
+        redirectUri: CONSUMER_REDIRECT,
+      }),
+    ).rejects.toBeInstanceOf(ApiError);
+    await expect(
+      exchangeAuthorizationCode(env, repos(), {
+        code,
+        codeVerifier,
+        clientId: rp.clientId,
+        redirectUri: CONSUMER_REDIRECT,
+      }),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('will not let a workforce request be approved as a consumer sign-in', async () => {
+    planted.session = person();
+    const { view } = await startRequest();
+    await expect(
+      completeConsumerAuthorization(env, repos(), {
+        requestId: view.requestId,
+        authorizationHeader: 'Bearer t',
+      }),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('will not exchange a consumer code for a client that may not hold consumer identities', async () => {
+    planted.session = person();
+    const { rp, view, codeVerifier } = await startConsumer();
+    const { redirectTo } = await completeConsumerAuthorization(env, repos(), {
+      requestId: view.requestId,
+      authorizationHeader: 'Bearer t',
+    });
+    store.clients.set(rp.clientId, { ...rp, allowedTokenUses: ['workforce'] });
+    await expect(
+      exchangeAuthorizationCode(env, repos(), {
+        code: codeFrom(redirectTo),
+        codeVerifier,
+        clientId: rp.clientId,
+        redirectUri: CONSUMER_REDIRECT,
+      }),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 });

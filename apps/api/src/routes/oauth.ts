@@ -10,6 +10,7 @@ import {
   workforceAuthorizePinBodySchema,
 } from '../lib/schemas.js';
 import {
+  completeConsumerAuthorization,
   completeWorkforceAuthorization,
   createAuthorizationRequest,
   describeAuthorizationRequest,
@@ -71,6 +72,20 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
     // The browser follows this itself; the API never issues a 302 here so the
     // sign-in host can show a rotation notice first when one is required.
     sendData(reply, result);
+  });
+
+  // A person approves a consumer sign-in: the KpnAuth host sends its own
+  // verified session as a bearer token; the API mints the single-use code.
+  app.post('/auth/oauth/authorize/:requestId/consumer', async (req, reply) => {
+    reply.header('cache-control', 'no-store');
+    const { requestId } = authorizationRequestParamsSchema.parse(req.params);
+    sendData(
+      reply,
+      await completeConsumerAuthorization(requestEnv(req), requestRepos(req), {
+        requestId,
+        authorizationHeader: req.headers.authorization,
+      }),
+    );
   });
 
   app.post('/auth/oauth/token', async (req, reply) => {

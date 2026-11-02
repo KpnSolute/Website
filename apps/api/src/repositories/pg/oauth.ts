@@ -1,6 +1,7 @@
 import type { Id, WorkforceServiceKey, WorkforceStaffSession } from '@kpn/contracts';
 import { requireRow, type Db } from '../../db/pool.js';
 import type {
+  ConsumerIdentityClaims,
   OAuthAuthorizationCodeRecord,
   OAuthAuthorizationRequestRecord,
   OAuthClientRecord,
@@ -43,6 +44,7 @@ interface CodeRow {
   nonce: string;
   token_use: string;
   consumer_user_id: string | null;
+  consumer_claims: ConsumerIdentityClaims | null;
   workforce_session_id: string | null;
   tenant_id: string | null;
   installation_id: string | null;
@@ -117,6 +119,7 @@ function toCode(row: CodeRow): OAuthAuthorizationCodeRecord {
     nonce: row.nonce,
     tokenUse: row.token_use,
     consumerUserId: row.consumer_user_id,
+    consumerClaims: row.consumer_claims ?? null,
     workforceSessionId: row.workforce_session_id,
     tenantId: row.tenant_id,
     installationId: row.installation_id,
@@ -212,8 +215,8 @@ export function createOAuthRepository(db: Db): OAuthRepository {
         `insert into private.oauth_authorization_codes
            (code_hash, request_id, client_id, redirect_uri, code_challenge, nonce,
             token_use, consumer_user_id, workforce_session_id, tenant_id,
-            installation_id, expires_at)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+            installation_id, expires_at, consumer_claims)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           input.codeHash,
           input.requestId,
@@ -227,6 +230,7 @@ export function createOAuthRepository(db: Db): OAuthRepository {
           input.tenantId ?? null,
           input.installationId ?? null,
           input.expiresAt,
+          input.consumerClaims ? JSON.stringify(input.consumerClaims) : null,
         ],
       );
     },

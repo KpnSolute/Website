@@ -82,6 +82,26 @@ function signingConfig(env: EnvRecord): WorkforceSigningConfig {
   };
 }
 
+/**
+ * The KpnAuth signing key and issuer, shared by workforce access tokens and
+ * consumer ID tokens: one ES256 key, one issuer, one JWKS. Rotation replaces
+ * WORKFORCE_JWT_PRIVATE_KEY / PUBLIC_KEY / KEY_ID together.
+ */
+export async function kpnAuthSigner(env: EnvRecord): Promise<{
+  key: Awaited<ReturnType<typeof importPKCS8>>;
+  keyId: string;
+  issuer: string;
+  algorithm: 'ES256';
+}> {
+  const config = signingConfig(env);
+  return {
+    key: await importPKCS8(config.privateKeyPem, TOKEN_ALGORITHM),
+    keyId: config.keyId,
+    issuer: config.issuer,
+    algorithm: 'ES256',
+  };
+}
+
 export function requireWorkforceSigningConfig(env: EnvRecord): void {
   signingConfig(env);
 }
