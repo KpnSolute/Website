@@ -36,7 +36,7 @@ def tile(inner, bg, rx=28):
 def favicon_full():
     """Full icon on a white rounded tile (tests how much of the weave survives at 16 px)."""
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t"><title id="t">KpnSolute</title>'
-            + tile(icon_group(INK, STAR, 120, 4, 4), "#FFFFFF", rx=26) + '</svg>\n')
+            + tile(icon_group(INK, STAR, 120, 4, 4), "#FFFFFF", rx=0) + '</svg>\n')
 
 def favicon_compass():
     """Simplified for tiny sizes: the star and the eye only, on a dark tile (reads on light and dark browser tabs)."""
