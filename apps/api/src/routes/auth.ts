@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { openIdConfiguration } from '../services/oidc-discovery.js';
 import { resolvePlatformConfigState } from '@kpn/config';
 import { requestEnv, requestRepos } from '../lib/context.js';
 import { sendData } from '../lib/reply.js';
@@ -32,6 +33,12 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   app.get('/auth/.well-known/jwks.json', async (req, reply) => {
     reply.header('cache-control', 'public, max-age=300, must-revalidate');
     reply.send(await workforcePublicJwks(requestEnv(req)));
+  });
+
+  // OpenID discovery for relying parties (LunchVoice and future products).
+  app.get('/auth/.well-known/openid-configuration', async (req, reply) => {
+    reply.header('cache-control', 'public, max-age=300, must-revalidate');
+    reply.send(await openIdConfiguration(requestEnv(req)));
   });
 
   app.get('/auth/config-state', async (req, reply) => {

@@ -1,14 +1,19 @@
 import type { EnvRecord } from '@kpn/config';
 import { isWorkforceServiceKey, type WorkforceServiceKey } from '@kpn/contracts';
+import { SignJWT } from 'jose';
 import type {
+  ConsumerIdentityClaims,
   OAuthAuthorizationRequestRecord,
   OAuthRepository,
+  Repositories,
   WorkforceAuthRepository,
 } from '../repositories/types.js';
+import { resolveAccessToken, type AuthenticatedSession } from './auth.js';
 import { ApiError } from '../lib/errors.js';
 import {
   authenticateWorkforcePin,
   issueWorkforceAccessToken,
+  kpnAuthSigner,
   resolveWorkforceAccessToken,
 } from './workforce-auth.js';
 import {
@@ -222,6 +227,97 @@ export async function completeWorkforceAuthorization(
   };
 }
 
+/** Lifetime of a consumer ID token. Relying parties exchange it for their own session at once. */
+export const CONSUMER_ID_TOKEN_TTL_SECONDS = 5 * 60;
+
+/**
+ * Complete a consumer (person) sign-in. The browser has signed in at the
+ * KpnAuth host and presents that session's bearer token; the token is verified
+ * against the identity provider before anything is written. The person's
+ * KpnSolute account id becomes the subject, and the identity claims that go
+ * into the relying party's ID token are captured now, from the verified
+ * session, so `email_verified` is never a stale cached value.
+ */
+export async function completeConsumerAuthorization(
+  env: EnvRecord,
+  repositories: Repositories,
+  input: { requestId: string; authorizationHeader: string | undefined },
+): Promise<{ redirectTo: string }> {
+  const request = await loadPendingRequest(repositories.oauth, input.requestId);
+  if (request.requestedTokenUse !== 'consumer') {
+    throw ApiError.validation('This sign-in request is not a consumer request.');
+  }
+  const session = await resolveAccessToken(env, repositories, input.authorizationHeader);
+  if (!session) throw ApiError.unauthenticated('Sign in to KpnSolute to continue.');
+
+  const code = generateOpaqueSecret();
+  await repositories.oauth.createAuthorizationCode({
+    codeHash: hashOpaqueSecret(code),
+    requestId: request.id,
+    clientId: request.clientId,
+    redirectUri: request.redirectUri,
+    codeChallenge: request.codeChallenge,
+    nonce: request.nonce,
+    tokenUse: 'consumer',
+    consumerUserId: session.userId,
+    consumerClaims: consumerClaimsFrom(session),
+    expiresAt: expiryFromNow(AUTHORIZATION_CODE_TTL_SECONDS),
+  });
+  await repositories.oauth.markAuthorizationRequest(request.id, 'authorized');
+  return { redirectTo: buildSuccessRedirect(request.redirectUri, code, request.state) };
+}
+
+function consumerClaimsFrom(session: AuthenticatedSession): ConsumerIdentityClaims {
+  const claims = session.claims as Record<string, unknown>;
+  const meta = (
+    claims.user_metadata && typeof claims.user_metadata === 'object' ? claims.user_metadata : {}
+  ) as Record<string, unknown>;
+  const text = (value: unknown) =>
+    typeof value === 'string' && value.trim() ? value.trim() : null;
+  const picture = text(meta.avatar_url) ?? text(meta.picture);
+  return {
+    email: text(claims.email),
+    // Only an explicit verification signal counts. Absent or ambiguous means unverified.
+    emailVerified: meta.email_verified === true || typeof claims.email_confirmed_at === 'string',
+    name: text(meta.full_name) ?? text(meta.name) ?? session.user.displayName ?? null,
+    picture: picture && /^https:\/\//.test(picture) ? picture : null,
+  };
+}
+
+/** What a relying party receives for a consumer code: an OIDC ID token, nothing else. */
+export interface ConsumerTokenResponse {
+  idToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+}
+
+async function issueConsumerIdToken(
+  env: EnvRecord,
+  input: {
+    subject: string;
+    audience: string;
+    nonce: string;
+    claims: ConsumerIdentityClaims | null;
+  },
+): Promise<string> {
+  const signer = await kpnAuthSigner(env);
+  const now = Math.floor(Date.now() / 1000);
+  const claims = input.claims;
+  return new SignJWT({
+    nonce: input.nonce,
+    ...(claims?.email ? { email: claims.email, email_verified: claims.emailVerified } : {}),
+    ...(claims?.name ? { name: claims.name } : {}),
+    ...(claims?.picture ? { picture: claims.picture } : {}),
+  })
+    .setProtectedHeader({ alg: signer.algorithm, kid: signer.keyId, typ: 'JWT' })
+    .setIssuer(signer.issuer)
+    .setAudience(input.audience)
+    .setSubject(input.subject)
+    .setIssuedAt(now)
+    .setExpirationTime(now + CONSUMER_ID_TOKEN_TTL_SECONDS)
+    .sign(signer.key);
+}
+
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
@@ -244,7 +340,7 @@ export async function exchangeAuthorizationCode(
   env: EnvRecord,
   repositories: { oauth: OAuthRepository; workforceAuth: WorkforceAuthRepository },
   input: { code: string; codeVerifier: string; clientId: string; redirectUri: string },
-): Promise<TokenResponse> {
+): Promise<TokenResponse | ConsumerTokenResponse> {
   const client = await repositories.oauth.findClientByClientId(input.clientId);
   if (!client || client.status !== 'active') {
     throw ApiError.unauthenticated('The token request could not be completed.');
@@ -270,8 +366,21 @@ export async function exchangeAuthorizationCode(
   if (!verifyPkceS256(input.codeVerifier, record.codeChallenge)) {
     throw ApiError.unauthenticated('The PKCE verifier does not match the authorization request.');
   }
+  if (record.tokenUse === 'consumer') {
+    if (!record.consumerUserId || !client.allowedTokenUses.includes('consumer')) {
+      throw ApiError.unauthenticated('This authorization code cannot be exchanged by this client.');
+    }
+    // The ID token's audience is the relying party's public client id.
+    const idToken = await issueConsumerIdToken(env, {
+      subject: record.consumerUserId,
+      audience: client.clientId,
+      nonce: record.nonce,
+      claims: record.consumerClaims,
+    });
+    return { idToken, tokenType: 'Bearer', expiresIn: CONSUMER_ID_TOKEN_TTL_SECONDS };
+  }
   if (record.tokenUse !== 'workforce' || !record.workforceSessionId) {
-    throw ApiError.validation('Only workforce authorization codes can be exchanged today.');
+    throw ApiError.validation('Only consumer and workforce authorization codes can be exchanged.');
   }
 
   const serviceKey = client.serviceKey;

@@ -339,6 +339,14 @@ export interface OAuthAuthorizationRequestRecord {
   expiresAt: string;
 }
 
+/** Identity claims for a consumer ID token, captured from the verified session at authorization. */
+export interface ConsumerIdentityClaims {
+  email: string | null;
+  emailVerified: boolean;
+  name: string | null;
+  picture: string | null;
+}
+
 /** Returned only by an atomic consume. Never fetched without consuming. */
 export interface OAuthAuthorizationCodeRecord {
   id: Id;
@@ -349,6 +357,7 @@ export interface OAuthAuthorizationCodeRecord {
   nonce: string;
   tokenUse: string;
   consumerUserId: Id | null;
+  consumerClaims: ConsumerIdentityClaims | null;
   workforceSessionId: Id | null;
   tenantId: Id | null;
   installationId: Id | null;
@@ -399,6 +408,7 @@ export interface OAuthRepository {
     nonce: string;
     tokenUse: string;
     consumerUserId?: Id | null;
+    consumerClaims?: ConsumerIdentityClaims | null;
     workforceSessionId?: Id | null;
     tenantId?: Id | null;
     installationId?: Id | null;
