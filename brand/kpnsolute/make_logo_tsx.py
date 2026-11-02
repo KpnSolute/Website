@@ -4,7 +4,9 @@ import json, re, sys
 L = json.load(open("layers.json"))
 rnd = lambda d: re.sub(r"-?\d+\.\d", lambda m: str(round(float(m.group(0)))), d)          # integers: 25% smaller, invisible at logo size
 ink, star = rnd(L["ink"]), rnd(L["star"])
-svg = open("kpnsolute-lockup.svg").read()
+import os
+lockup = "kpnsolute-lockup.svg" if os.path.exists("kpnsolute-lockup.svg") else "../../apps/hub/public/brand/kpnsolute-lockup.svg"
+svg = open(lockup).read()
 vb = float(re.search(r'viewBox="0 0 ([\d.]+) 128"', svg).group(1))
 word = re.sub(r"-?\d+\.\d{2,}", lambda m: f"{float(m.group(0)):.1f}", re.search(r'<path fill="#0A0A0A" d="([^"]+)"/>', svg).group(1))
 tr = re.search(r'<g transform="([^"]+)">', svg).group(1)

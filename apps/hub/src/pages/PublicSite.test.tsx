@@ -105,6 +105,12 @@ describe('logo', () => {
       expect(logo.getAttribute('aria-hidden')).toBe('true');
       expect(logo.querySelector('.kpn-logo-spin')).not.toBeNull();
       expect(logo.querySelectorAll('path').length).toBe(3); // ink, star, wordmark
+      // The star is the design system's accent (brand blue), never a hard-coded or retired color.
+      const fills = Array.from(logo.querySelectorAll('path')).map((path) =>
+        path.getAttribute('fill'),
+      );
+      expect(fills[1]).toBe('var(--kpn-color-accent, #2f5fe0)');
+      expect(fills.join(' ')).not.toMatch(/01848e|teal/i);
     }
     // The home link still has an accessible name.
     expect(screen.getAllByRole('link', { name: 'KpnSolute home' }).length).toBeGreaterThan(0);
