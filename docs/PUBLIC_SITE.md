@@ -27,10 +27,10 @@ privacy of customer materials) and `governance/LEGAL_STATUS_AND_IP.md`. Change t
 ## Brand
 
 `brand/kpnsolute/` holds the source (`build.py`, Josefin Sans under the SIL OFL, licence included). The wordmark
-is the owner's supplied lettering (Josefin Sans), outlined so no font is needed. The icon is a **K built as a
-route**: a stem that branches into two paths ending in nodes, the same idea as the home page route map.
+is the owner's supplied lettering (Josefin Sans), outlined so no font is needed. The mark is a **K made of two
+solid shapes**: a stem and a bold chevron split by an even gap. Navy stem and blue chevron on light, white stem and
+light-blue chevron on dark or on the app tile. Variants: flat lockup (site), app tile, uppercase wide-spaced
+alternative, dark, mono marks, and a bolder favicon that holds at 16 px.
 
 Regenerate: `python3 -m venv /tmp/v && /tmp/v/bin/pip install fonttools && cd brand/kpnsolute && /tmp/v/bin/python build.py`,
-then copy the SVGs to `apps/hub/public/brand/` and refresh `apps/hub/src/components/Logo.tsx` (its path is generated).
-Colors: navy `#0B1226`, paper `#F7F8FA`, accent `#6D8DFF` on dark tile (the site's blue `#2F5FE0` on light).
-`kpnsolute-favicon.svg` is a bolder, simpler K for 16 to 48 px.
+then copy the SVGs to `apps/hub/public/brand/` and refresh `apps/hub/src/components/Logo.tsx` (its wordmark path is generated).

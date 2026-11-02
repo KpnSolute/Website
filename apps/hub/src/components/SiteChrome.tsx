@@ -30,7 +30,7 @@ export function SiteHeader() {
       </a>
       <div className="pub-header-inner">
         <Link to="/" className="pub-logo kpn-focusable" aria-label="KpnSolute home">
-          <Logo height={38} />
+          <Logo height={46} />
         </Link>
         <nav aria-label="Main" className="pub-nav">
           {NAV.map((item) => (
