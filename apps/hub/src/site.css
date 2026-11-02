@@ -391,14 +391,6 @@
   margin-bottom: var(--kpn-space-2);
 }
 
-/* Brand teal for the logo's compass star; lighter on dark surfaces. */
-:root {
-  --kpn-logo-teal: #01848e;
-}
-[data-kpn-theme='dark'] {
-  --kpn-logo-teal: #22b8c4;
-}
-
 /* The icon turns slowly while the logo is hovered or focused, and rests (without snapping back) when it is not. */
 .kpn-logo-spin {
   transform-box: fill-box;

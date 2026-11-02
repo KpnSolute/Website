@@ -1,5 +1,5 @@
 """Traces the owner's final icon artwork (source-icon.webp) into clean vector layers.
-Two layers, no painted white: INK (orbits, diamond frame, dot) and TEAL (compass star). Gaps between strokes
+Two layers, no painted white: INK (orbits, diamond frame, dot) and STAR (compass star). Gaps between strokes
 stay transparent, so the icon works on any background and recolors for dark mode.   Output: layers.json"""
 import json, numpy as np, potrace
 from PIL import Image
@@ -27,5 +27,5 @@ def trace(mask, name, straight=False):
         parts.append(d + "Z")
     print(name, "curves", len(parts), "chars", sum(map(len, parts))); return "".join(parts)
 
-layers = {"ink": trace(ink, "ink"), "teal": trace(teal, "teal", straight=True)}
+layers = {"ink": trace(ink, "ink"), "star": trace(teal, "star", straight=True)}
 json.dump(layers, open("layers.json", "w")); print("done")

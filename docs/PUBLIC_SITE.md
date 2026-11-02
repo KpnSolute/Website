@@ -44,10 +44,10 @@ Google consent screen values: home page `https://kpnsolute.com/`, privacy `https
 
 ## Brand
 
-The **final brand icon** is the owner's artwork: a teal compass star at the centre of woven black orbits, with an
+The **final brand icon** is the owner's artwork: a compass star at the centre of woven black orbits (recolored to the brand blue at the owner's request), with an
 "eye" in the middle. `brand/kpnsolute/source-icon.webp` is that artwork, and the SVGs are traced from it
 (`trace.py` -> `layers.json` -> `icon.py`, `assets.py`), not redrawn, so they match it exactly. It is two layers:
-**ink** (orbits, diamond frame, dot) and **teal** (the star). The gaps between strokes are real gaps, not white paint,
+**ink** (orbits, diamond frame, dot) and **star** (the compass, brand blue `#2F5FE0`; `#6D8DFF` on dark). The gaps between strokes are real gaps, not white paint,
 so the icon works on any background and recolors for dark mode (`kpnsolute-icon-on-dark.svg`).
 
 The wordmark is the owner's supplied lettering (Josefin Sans, SIL OFL, licence included), outlined so no font is needed.
@@ -58,5 +58,6 @@ On the site the `Logo` component turns the icon slowly (24 s a turn) while the l
 stopped, and does not move under `prefers-reduced-motion`.
 
 Regenerate: `python3 -m venv /tmp/v && /tmp/v/bin/pip install fonttools potracer pillow numpy` then, in `brand/kpnsolute`,
-`python trace.py && python icon.py && python assets.py`; copy the SVGs to `apps/hub/public/brand/` and refresh
-`apps/hub/src/components/Logo.tsx` (its paths are generated from `layers.json`).
+`python trace.py && python icon.py && python assets.py && python make_logo_tsx.py ../../apps/hub/src/components/Logo.tsx`,
+then copy the SVGs and PNGs to `apps/hub/public/` (brand files in `brand/`). The star's blue lives in `icon.py` (`STAR`) for the files and in the
+design-system accent token for the site logo.
