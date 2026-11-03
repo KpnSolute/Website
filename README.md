@@ -34,7 +34,7 @@ product still owns its schemas and runtime. Product adapters must validate
 KpnAuth issuer, audience, signature, expiry, and current database-backed tenant
 membership before authenticated migration is considered complete.
 
-KpnAuth uses the dedicated Supabase project `vwbrxcltetelvvkbnbru`. Supabase
+KpnAuth uses the dedicated Supabase project `axzwdbizblfkspduqilj`. Supabase
 Auth owns credentials, social identities, sessions, OAuth clients, grants,
 authorization codes, access tokens, refresh tokens, discovery, and JWKS. The
 application database owns profiles, organizations, memberships, product
